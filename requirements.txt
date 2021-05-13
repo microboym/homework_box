@@ -1,0 +1,5 @@
+tensorflow
+numpy
+# matplotlab
+opencv-python
+baidu-aip
