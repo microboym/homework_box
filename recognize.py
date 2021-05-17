@@ -10,13 +10,14 @@ print(f"Numpy version {np.__version__}")
 
 class Recognizer():
 
-    def __init__(self, model_path="model.h5"):
+    def __init__(self, model_path="model.h5", img_roi=(0, 0, 0, 0)):
         print("Loading model", model_path)
         self.model = keras.models.load_model(model_path)
+        self.img_roi = img_roi
         print("Model loaded")
 
-    def predict(self, img, roi=(0, 0, 0, 0), length=5):
-        _, _, bin = pre_process.accessBinary(img, roi)
+    def predict(self, img, length=5):
+        _, _, bin = pre_process.accessBinary(img, self.img_roi)
         borders = pre_process.get_borders(bin, length=length)
         number_images = pre_process.extract_numbers(bin, borders)
         results = self.model.predict(number_images)
