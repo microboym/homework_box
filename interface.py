@@ -1,3 +1,5 @@
+# -*- coding: UTF-8 -*-
+
 import tkinter as tk
  
 class Section(tk.Frame):
@@ -13,12 +15,12 @@ class Section(tk.Frame):
         self.create_widgets()
 
     def create_widgets(self):
-        self.subject_name = tk.Label(self, text="Chinese", font=("Helvetica", 37))
+        self.subject_name = tk.Label(self, text="作业登记", font=("Helvetica", 37))
         self.subject_name.pack(side="top")
         self.lists_frame = tk.Frame(self)
         self.lists_frame.pack(side="bottom", expand=tk.YES, fill=tk.Y)
 
-        font = ("Helvetica", 30)
+        font = ("Helvetica", 20)
         self.submitted_box = tk.Listbox(self.lists_frame, font=font)
         self.submitted_box.pack(side="left", expand=tk.YES, fill=tk.Y)
         self.unsubmitted_box = tk.Listbox(self.lists_frame, font=font)
@@ -32,7 +34,7 @@ class Section(tk.Frame):
 
         self.submitted_box.delete(0, tk.END)
         for id in self.submitted:
-            self.submitted_box.insert(0, id)
+            self.submitted_box.insert(tk.END, id)
 
         self.unsubmitted_box.delete(0, tk.END)
         for id in self.name_list:
@@ -42,6 +44,7 @@ class Section(tk.Frame):
     def add(self, id):
         if id not in self.submitted:
             self.submitted.append(id)
+            print("ID", id, "\n", "submitted", self.submitted)
         self.update()
 
 

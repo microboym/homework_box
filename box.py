@@ -11,7 +11,7 @@ except ImportError:
     print("Warning: Running on local computer.")
 
 # Servo control
-ANGLE_OPEN = 80
+ANGLE_OPEN = 60
 ANGLE_CLOSE = 380
 
 def setServoAngle(servo, angle):
@@ -28,12 +28,14 @@ class Box:
         self.recognizer = recognizer
         self.camera = cv2.VideoCapture(cam_index)
         self.server_root = server_root
+        self.submitted = []
 
         self.set_up_pins(servo_pin, ir_1_pin, ir_2_pin)
 
         # TODO Request for student list
-        # r = requests.get(self.server_root + "/students")
-        # self.students = json.loads(r.text)
+        r = requests.get(self.server_root + "/students")
+        print(r.text)
+        self.students = json.loads(r.text)
         test_students = [
             {"id": 70101, "name":"李宇航"},
             {"id": 70102, "name":"温子航"},
@@ -41,7 +43,7 @@ class Box:
             {"id": 70104, "name":"任执行"},
             {"id": 70105, "name":"王大友"},
         ]
-        self.students = test_students
+        # self.students = test_students
 
     def set_up_pins(self, servo_pin, ir_1_pin, ir_2_pin):
         self.servo_pin = servo_pin
@@ -70,24 +72,39 @@ class Box:
                 setServoAngle(self.servo_pin, ANGLE_CLOSE)
                 break
     
-    def process_passed_book(self):
+    def process_passed_book(self): 
         _, image = self.camera.read()
-        cv2.imwrite("temp.jpg", image)
+        # cv2.imwrite("temp.jpg", image)
         id = self.recognizer.predict(image)
         print("Predicted:", id)
 
-        self.wait_for_book_dropped()
+        try:
+            id = int(id)
+        except:
+            return
 
-        # r = requests.post(self.server_root + "/submit", data = {
-        #     "student_id": id,
-        #     "homework_id": 0, # TODO homework ID
-        #     "submit_time": datetime.now()
-        # })
+        for student in self.students:
+            if id == student["id"] and id not in self.submitted:
+                print("****** SERVO OPENING")
+                setServoAngle(self.servo_pin, ANGLE_OPEN)
 
-        if self.listener is not None:
-            for student in self.students:
-                if student["id"] == id:
-                    self.listener(student["name"])
+                self.wait_for_book_dropped()
+                print("****** BOOK DROPPED")
+
+                self.submitted.append(id)
+
+                data = {
+                    "student_id": id,
+                    "homework_id": 1, # TODO homework ID
+                    "submit_time": str(datetime.now())
+                }
+
+                r = requests.post(self.server_root + "/submit", json=data)
+
+                if self.listener is not None:
+                    for student in self.students:
+                        if student["id"] == id:
+                            self.listener(''.join(student["name"]))
 
         # return r.text
     
