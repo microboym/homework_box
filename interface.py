@@ -1,70 +1,61 @@
 import tkinter as tk
-
-import data
-
-from capture import capture_picture
-import baidu
-
-# recognizer = Recognizer("./model.h5")
-recognizer = baidu
-
-class Application(tk.Frame):
+ 
+class Section(tk.Frame):
 
     def __init__(self, master=None, name_list=[], submitted=[]):
         super().__init__(master)
 
-        self.name_list = set(name_list)
-        self.submitted = set(submitted)
-
-        self.option_add('*Font', '70')
+        self.name_list = name_list
+        self.submitted = submitted
 
         self.master = master
-        self.pack(expand=tk.YES, fill=tk.BOTH)
+        self.pack(expand=tk.YES, fill=tk.Y, side="right")
         self.create_widgets()
 
-        w, h = self.master.maxsize()
-        self.master.geometry("{}x{}".format(w, h))
-
     def create_widgets(self):
-        self.submitted_box = tk.Listbox(self)
-        self.submitted_box.pack(side="left", expand=tk.YES, fill=tk.BOTH)
-        for id in list(self.submitted):
-            self.submitted_box.insert('end', id)
+        self.subject_name = tk.Label(self, text="Chinese", font=("Helvetica", 37))
+        self.subject_name.pack(side="top")
+        self.lists_frame = tk.Frame(self)
+        self.lists_frame.pack(side="bottom", expand=tk.YES, fill=tk.Y)
 
-        self.unsubmitted_box = tk.Listbox(self)
-        self.unsubmitted_box.pack(side="right", expand=tk.YES, fill=tk.BOTH)
-        for id in list(self.name_list - self.submitted):
-            self.unsubmitted_box.insert("end", id)
+        font = ("Helvetica", 30)
+        self.submitted_box = tk.Listbox(self.lists_frame, font=font)
+        self.submitted_box.pack(side="left", expand=tk.YES, fill=tk.Y)
+        self.unsubmitted_box = tk.Listbox(self.lists_frame, font=font)
+        self.unsubmitted_box.pack(side="right", expand=tk.YES, fill=tk.Y)
 
-    def add_submitted(self, id):
-        self.submitted = self.submitted | {id}
-        self.submitted_box.insert("end", id)
+        self.update()
+
+    def update(self, submitted=None):
+        if submitted is not None:
+            self.submitted = submitted
+
+        self.submitted_box.delete(0, tk.END)
+        for id in self.submitted:
+            self.submitted_box.insert(0, id)
 
         self.unsubmitted_box.delete(0, tk.END)
-        for id in list(self.name_list - self.submitted):
-            self.unsubmitted_box.insert("end", id)
-
-    def scan(self):
-        image = capture_picture()
-
-        # TODO Add ROI
-        id = recognizer.predict(image)
-
-        print(id)
-        if id is not None:
-            print("Got Name: ", id)
-            if id in name_list:
-                app.add_submitted(id)
-
-        self.after(1000, self.scan)
+        for id in self.name_list:
+            if id not in self.submitted:
+                self.unsubmitted_box.insert(tk.END, id)
+    
+    def add(self, id):
+        if id not in self.submitted:
+            self.submitted.append(id)
+        self.update()
 
 
-# if __name__ == "__main__":
-#     name_list = data.get_name_list()
+if __name__ == "__main__":
 
-#     root = tk.Tk()
-#     app = Application(master=root, name_list=name_list)
+    root = tk.Tk()
 
-#     app.after(1000, app.scan)
+    section1 = Section(master=root, name_list=["Tony", "Andy", "Tom"], submitted=["Jack"])
+    section2 = Section(master=root, name_list=["Tony", "Andy", "Tom"], submitted=["Tony"])
 
-#     app.mainloop()
+    w, h = root.maxsize()
+    root.geometry("{}x{}".format(w, h))
+
+    root.after(2000, lambda: section1.add("Tony"))
+    root.after(4000, lambda: section1.add("Andy"))
+
+    root.mainloop()

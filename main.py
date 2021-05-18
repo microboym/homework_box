@@ -1,40 +1,26 @@
-from time import sleep
+import os
 import tkinter as tk
 
-import data
-import status
+import cnn
+import box
 import interface
-# from recognize import Recognizer
-from capture import capture_picture
-import baidu
 
-# recognizer = Recognizer("./model.h5")
-recognizer = baidu
+model_path = os.getenv("MODEL_PATH", "model.h5")
+server_root = os.getenv("SERVER_URL", "http://127.0.0.1:8000/raspberry")
+cam_index = int(os.getenv("CAM_INDEX", "1"))
+recognizer = cnn.Recognizer(model_path=model_path)
 
-name_list = data.get_name_list()
+raspberry_configs = [
+    {"cam_index": cam_index, "servo_pin": 2, "ir_1_pin":3, "ir_2_pin": 4},
+    # {"cam_index": 1, "servo_pin": 2, "ir_1_pin": 3, "ir_2_pin": 4},
+]
 
-# Set up interface
-root = tk.Tk()
-app = interface.Application(master=root, name_list=name_list)
+boxs = [box.Box(recognizer, server_root=server_root, **config) for config in raspberry_configs]
 
+interface_root = tk.Tk()
+for box in boxs:
+    section = interface.Section(interface_root, name_list=[student["name"] for student in box.students])
+    box.set_listener(section.update)
+    box.start_background()
 
-def main():
-    # Main Loop
-    print("Main Loop")
-    while True:
-        sleep(2)
-
-        if status.book_passed():
-            image = capture_picture()
-
-            # TODO Add ROI
-            id = recognizer.predict(image)
-
-            if id is not None:
-                print("Got Name: ", id)
-                if id in name_list:
-                    app.add_submitted(id)
-
-
-# root.after(1000, main)
-app.mainloop()
+interface_root.mainloop()

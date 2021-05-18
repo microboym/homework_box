@@ -2,6 +2,7 @@ import cv2
 import requests
 import threading
 import time
+import json
 from datetime import datetime
 
 try:
@@ -10,8 +11,8 @@ except ImportError:
     print("Warning: Running on local computer.")
 
 # Servo control
-ANGLE_OPEN = 70
-ANGLE_CLOSE = 130
+ANGLE_OPEN = 80
+ANGLE_CLOSE = 380
 
 def setServoAngle(servo, angle):
     pwm = GPIO.PWM(servo, 50)
@@ -30,7 +31,17 @@ class Box:
 
         self.set_up_pins(servo_pin, ir_1_pin, ir_2_pin)
 
-        r = requests.get(self.server_root + "/students")
+        # TODO Request for student list
+        # r = requests.get(self.server_root + "/students")
+        # self.students = json.loads(r.text)
+        test_students = [
+            {"id": 70101, "name":"李宇航"},
+            {"id": 70102, "name":"温子航"},
+            {"id": 70103, "name":"王思悦"},
+            {"id": 70104, "name":"任执行"},
+            {"id": 70105, "name":"王大友"},
+        ]
+        self.students = test_students
 
     def set_up_pins(self, servo_pin, ir_1_pin, ir_2_pin):
         self.servo_pin = servo_pin
@@ -61,27 +72,39 @@ class Box:
     
     def process_passed_book(self):
         _, image = self.camera.read()
-        id = self.recognizer.predict(image, roi=self.roi)
+        cv2.imwrite("temp.jpg", image)
+        id = self.recognizer.predict(image)
         print("Predicted:", id)
 
         self.wait_for_book_dropped()
 
-        r = requests.post(self.server_root + "/submit", data = {
-            "student_id": id,
-            "homework_id": 0, # TODO homework ID
-            "submit_time": datetime.now()
-        })
+        # r = requests.post(self.server_root + "/submit", data = {
+        #     "student_id": id,
+        #     "homework_id": 0, # TODO homework ID
+        #     "submit_time": datetime.now()
+        # })
 
-        return r.text
+        if self.listener is not None:
+            for student in self.students:
+                if student["id"] == id:
+                    self.listener(student["name"])
+
+        # return r.text
     
     def service(self):
+        print("Starting service")
         while True:
-            # TODO when homework is passed
-            time.sleep(0.1)
+            # print(GPIO.input(self.ir_1_pin))
+            if GPIO.input(self.ir_1_pin) == 0:
+                print("Book passed.")
+                time.sleep(0.1)
 
-            result = self.process_passed_book()
-            print(result)
+                result = self.process_passed_book()
+                print(result)
 
     def start_background(self):
         thread = threading.Thread(target=self.service)
         thread.start()
+
+    def set_listener(self, listener):
+        self.listener = listener
