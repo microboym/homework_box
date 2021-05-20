@@ -17,10 +17,9 @@ class Recognizer():
         print("Model loaded")
 
     def predict(self, img, length=5):
-        _, _, bin = pre_process.accessBinary(img, self.img_roi)
-        borders = pre_process.get_borders(bin, length=length)
-        number_images = pre_process.extract_numbers(bin, borders)
-        results = self.model.predict(number_images)
+        data = pre_process.process_image(img, roi=self.img_roi)
+        data = data.astype('float32') / 255
+        results = self.model.predict(data)
         numbers = []
         for res in results:
             numbers.append(str(np.argmax(res)))
