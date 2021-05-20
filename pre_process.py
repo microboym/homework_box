@@ -1,8 +1,8 @@
 import cv2
 import numpy as np
+from matplotlib import pyplot as plt
 
-
-def accessBinary(img, roi, threshold=165, kernel_size=(2, 2)):
+def access_binary(img, roi=(0, 0, 0, 0), threshold=165, kernel_size=(2, 2)):
     # Crop
     x, y, w, h = roi
     if roi != (0, 0, 0, 0):
@@ -20,24 +20,50 @@ def accessBinary(img, roi, threshold=165, kernel_size=(2, 2)):
     kernel = np.ones(kernel_size, np.uint8)
     dilate = cv2.dilate(thresh, kernel, iterations=1)
 
-    return img, thresh, dilate
+    return dilate
 
+def extract_peek(array_vals, min_vals=10, min_rect=5):
+    extract_points = []
+    start_point = None
+    end_point = None
+    for i, point in enumerate(array_vals):
+        if point > min_vals and start_point == None:
+            start_point = i
+        elif point < min_vals and start_point != None:
+            end_point = i
 
-def get_borders(bin, length, min_size=150):
-    contours, _ = cv2.findContours(bin, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-    area = lambda size: size[0] * size[1]
-    contours.sort(key=lambda c: area(cv2.boundingRect(c)[2:]), reverse=True)
-    contours = contours[:length]
+        if start_point != None and end_point != None:
+            extract_points.append((start_point, end_point))
+            start_point = None
+            end_point = None
 
+    for point in extract_points:
+        if point[1] - point[0] < min_rect:
+            extract_points.remove(point)
+    return extract_points
+
+def find_borders(img, length, min_size=0, max_size=float("inf")):
+    # Extract the row
+    hori_vals = np.sum(img, axis=1)
+    hori_points = extract_peek(hori_vals)
+    hori_point = hori_points[0]
+    extract_img = img[hori_point[0]:hori_point[1], :]
+
+    vec_vals = np.sum(extract_img, axis=0)
+    vec_points = extract_peek(vec_vals, min_rect=0)
     borders = []
-    for contour in contours:
-        x, y, w, h = cv2.boundingRect(contour)
-        if w * h > min_size:
-            border = [(x, y), (x + w, y + h)]
-            borders.append(border)
-    borders.sort(key=lambda x: x[0][0], reverse=False)
-    return borders
 
+    size_of_border = lambda x: (x[1][1]-x[0][1]) * (x[1][0]-x[0][0])
+    for vect_point in vec_points:
+        border = [(vect_point[0], hori_point[0]), (vect_point[1], hori_point[1])]
+        if size_of_border(border) >= min_size and size_of_border(border) <= max_size:
+            borders.append(border)
+
+    if len(borders) > length:
+        borders.sort(key=size_of_border)
+        borders = borders[:length]
+    if len(borders) == length:
+        return sorted(borders, key=lambda x: x[0][0])
 
 def extract_numbers(bin, borders, size=(28, 28)):
     img_data = np.zeros((len(borders), size[0], size[0], 1), dtype='uint8')
@@ -50,12 +76,23 @@ def extract_numbers(bin, borders, size=(28, 28)):
         img_data[i] = target_img
     return img_data
 
-
 def draw_border(img, borders):
     for i, border in enumerate(borders):
         cv2.rectangle(img, border[0], border[1], (0, 0, 255))
     return img
 
+def process_image(image, length=5, roi=(0, 0, 0, 0)):
+    binary = access_binary(image, roi=roi)
+    borders = find_borders(binary, length=length)
+    data = extract_numbers(binary, borders)
+    return data
+
+def trace_image(image, length=5, roi=(0, 0, 0, 0)):
+    binary = access_binary(image, roi=roi)
+    borders = find_borders(binary, length=length)
+    with_boders = draw_border(image.copy(), borders)
+    data = extract_numbers(binary, borders)
+    return binary, with_boders, data
 
 if __name__ == '__main__':
     length = 5
@@ -64,32 +101,14 @@ if __name__ == '__main__':
     path = input("Input path: ")
     image = cv2.imread(path)
 
-    if image is not None:
-        roi = cv2.selectROI("Crop", image)
-        print("Got ROI: ", roi)
-    else:
-        # Open default test image
-        path = "./test_data/1.jpg"
-        image = cv2.imread(path)
-        roi = (400, 716, 124, 117)
+    # Trace
+    binary, with_boders, data = trace_image(image)
 
-    # Access binary
-    crop, thresh, binary = accessBinary(image, roi=roi)
-    # plt.subplot(2, 2, 1), plt.imshow(binary, "gray"), plt.title("Binary")
+    plt.subplot(2, 2, 1), plt.imshow(binary, "gray"), plt.title("Binary")
+    plt.subplot(2, 2, 2), plt.imshow(with_boders, "gray"), plt.title("Borders")
 
-    # Get borders
-    borders = get_borders(binary, length=length)
-    bin_border = crop.copy()
+    for i in range(length):
+        plt.subplot(2, length, length + i + 1)
+        plt.imshow(data[i]), plt.title("Number {}".format(i + 1))
 
-    print("Got borders:", borders)
-    # bin_border = draw_border(bin_border, borders)
-    # plt.subplot(2, 2, 2), plt.imshow(bin_border, "gray"), plt.title("Borders")
-
-    # Extract numbers from the borders
-    data = extract_numbers(binary, borders)
-    # if len(data) == length:
-    #     for i in range(length):
-    #         plt.subplot(2, length, length + i + 1)
-    #         plt.imshow(data[i]), plt.title("Number {}".format(i + 1))
-
-    # plt.show()
+    plt.show()
