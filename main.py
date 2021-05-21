@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 import os
 import tkinter as tk
 
@@ -35,7 +34,7 @@ boxs = [box.Box(recognizer, server_root=server_root, **config) for config in ras
 
 for box in boxs:
     section = interface.Section(interface_root, name_list=[student["name"] for student in box.students])
-    box.set_listener(section.update)
+    box.set_listener(section.add)
     box.start_background()
 
 interface_root.mainloop()
