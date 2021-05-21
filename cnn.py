@@ -17,10 +17,13 @@ class Recognizer():
         print("Model loaded")
 
     def predict(self, img, length=5):
-        data = pre_process.process_image(img, roi=self.img_roi)
-        data = data.astype('float32') / 255
-        results = self.model.predict(data)
-        numbers = []
-        for res in results:
-            numbers.append(str(np.argmax(res)))
-        return int(''.join(numbers))
+        try:
+            data = pre_process.process_image(img, roi=self.img_roi, min_size=10)
+            data = data.astype('float32') / 255
+            results = self.model.predict(data)
+            numbers = []
+            for res in results:
+                numbers.append(str(np.argmax(res)))
+            return int(''.join(numbers))
+        except:
+            return None
