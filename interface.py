@@ -15,12 +15,12 @@ class Section(tk.Frame):
         self.create_widgets()
 
     def create_widgets(self):
-        self.subject_name = tk.Label(self, text="作业登记", font=("Helvetica", 37))
+        self.subject_name = tk.Label(self, text="作业登记", font=("Helvetica", 40))
         self.subject_name.pack(side="top")
         self.lists_frame = tk.Frame(self)
         self.lists_frame.pack(side="bottom", expand=tk.YES, fill=tk.Y)
 
-        font = ("Helvetica", 20)
+        font = ("Helvetica", 30)
         self.submitted_box = tk.Listbox(self.lists_frame, font=font)
         self.submitted_box.pack(side="left", expand=tk.YES, fill=tk.Y)
         self.unsubmitted_box = tk.Listbox(self.lists_frame, font=font)
