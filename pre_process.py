@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 
-def access_binary(img, roi=(0, 0, 0, 0), threshold=165, kernel_size=(2, 2)):
+def access_binary(img, roi=(0, 0, 0, 0), threshold=130, kernel_size=(2, 2)):
     # Crop
     x, y, w, h = roi
     if roi != (0, 0, 0, 0):
@@ -46,24 +46,26 @@ def find_borders(img, length, min_size=0, max_size=float("inf")):
     # Extract the row
     hori_vals = np.sum(img, axis=1)
     hori_points = extract_peek(hori_vals)
-    hori_point = hori_points[0]
-    extract_img = img[hori_point[0]:hori_point[1], :]
 
-    vec_vals = np.sum(extract_img, axis=0)
-    vec_points = extract_peek(vec_vals, min_rect=0)
-    borders = []
+    for hori_point in hori_points:
+    # hori_point = hori_points[0]
+        extract_img = img[hori_point[0]:hori_point[1], :]
 
-    size_of_border = lambda x: (x[1][1]-x[0][1]) * (x[1][0]-x[0][0])
-    for vect_point in vec_points:
-        border = [(vect_point[0], hori_point[0]), (vect_point[1], hori_point[1])]
-        if size_of_border(border) >= min_size and size_of_border(border) <= max_size:
-            borders.append(border)
+        vec_vals = np.sum(extract_img, axis=0)
+        vec_points = extract_peek(vec_vals, min_rect=5)
+        borders = []
 
-    if len(borders) > length:
-        borders.sort(key=size_of_border)
-        borders = borders[:length]
-    if len(borders) == length:
-        return sorted(borders, key=lambda x: x[0][0])
+        size_of_border = lambda x: (x[1][1]-x[0][1]) * (x[1][0]-x[0][0])
+        for vect_point in vec_points:
+            border = [(vect_point[0], hori_point[0]), (vect_point[1], hori_point[1])]
+            if size_of_border(border) >= min_size and size_of_border(border) <= max_size:
+                borders.append(border)
+
+        if len(borders) > length:
+            borders.sort(key=size_of_border)
+            borders = borders[:length]
+        if len(borders) == length:
+            return sorted(borders, key=lambda x: x[0][0])
 
 def extract_numbers(bin, borders, size=(28, 28)):
     img_data = np.zeros((len(borders), size[0], size[0], 1), dtype='uint8')
@@ -81,15 +83,15 @@ def draw_border(img, borders):
         cv2.rectangle(img, border[0], border[1], (0, 0, 255))
     return img
 
-def process_image(image, length=5, roi=(0, 0, 0, 0)):
+def process_image(image, length=5, min_size=0, max_size=float("inf"), roi=(0, 0, 0, 0)):
     binary = access_binary(image, roi=roi)
-    borders = find_borders(binary, length=length)
+    borders = find_borders(binary, length=length, min_size=min_size, max_size=max_size)
     data = extract_numbers(binary, borders)
     return data
 
-def trace_image(image, length=5, roi=(0, 0, 0, 0)):
+def trace_image(image, length=5, min_size=0, max_size=float("inf"), roi=(0, 0, 0, 0)):
     binary = access_binary(image, roi=roi)
-    borders = find_borders(binary, length=length)
+    borders = find_borders(binary, length=length, min_size=min_size, max_size=max_size)
     with_boders = draw_border(image.copy(), borders)
     data = extract_numbers(binary, borders)
     return binary, with_boders, data
@@ -101,7 +103,7 @@ if __name__ == '__main__':
     path = input("Input path: ")
     image = cv2.imread(path)
 
-    # Trace
+    #
     binary, with_boders, data = trace_image(image)
 
     plt.subplot(2, 2, 1), plt.imshow(binary, "gray"), plt.title("Binary")
