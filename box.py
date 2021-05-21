@@ -5,6 +5,8 @@ import time
 import json
 from datetime import datetime
 
+from PIL import Image, ImageTk
+
 try:
     import RPi.GPIO as GPIO
 except ImportError:
@@ -23,8 +25,10 @@ def setServoAngle(servo, angle):
     pwm.stop()
 
 class Box:
+
+    index = 0
     
-    def __init__(self, recognizer, cam_index, servo_pin, ir_1_pin, ir_2_pin, server_root):
+    def __init__(self, recognizer, cam_index, servo_pin, ir_1_pin, ir_2_pin, server_root, tk_label=None):
         self.recognizer = recognizer
         self.camera = cv2.VideoCapture(cam_index)
         self.server_root = server_root
@@ -44,6 +48,8 @@ class Box:
             {"id": 70105, "name":"王大友"},
         ]
         # self.students = test_students
+
+        self.tk_label = tk_label
 
     def set_up_pins(self, servo_pin, ir_1_pin, ir_2_pin):
         self.servo_pin = servo_pin
@@ -74,7 +80,7 @@ class Box:
     
     def process_passed_book(self): 
         _, image = self.camera.read()
-        # cv2.imwrite("temp.jpg", image)
+        self.show_frame(image)
         id = self.recognizer.predict(image)
         print("Predicted:", id)
 
@@ -125,3 +131,13 @@ class Box:
 
     def set_listener(self, listener):
         self.listener = listener
+
+    def show_frame(self, frame):
+        self.index += 1
+        if self.tk_label is not None:
+            cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
+            cv2.imwrite(f"./captured/cap_{self.index}.jpg", frame)
+            img = Image.fromarray(cv2image)
+            imgtk = ImageTk.PhotoImage(image=img)
+            self.tk_label.imgtk = imgtk
+            self.tk_label.configure(image=imgtk)
