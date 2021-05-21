@@ -25,8 +25,11 @@ imageFrame.pack(side="right")
 lmain = tk.Label(imageFrame)
 lmain.grid(row=0, column=0)
 
+linfo = tk.Label(imageFrame, font=("Helvetica", 40))
+linfo.grid(row=1, column=0)
+
 raspberry_configs = [
-    {"cam_index": cam_index, "servo_pin": 2, "ir_1_pin":3, "ir_2_pin": 4, "tk_label": lmain},
+    {"cam_index": cam_index, "servo_pin": 2, "ir_1_pin":3, "ir_2_pin": 4, "tk_label": lmain, "tk_info": linfo},
     # {"cam_index": 1, "servo_pin": 2, "ir_1_pin": 3, "ir_2_pin": 4},
 ]
 

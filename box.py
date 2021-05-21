@@ -28,7 +28,7 @@ class Box:
 
     index = 0
     
-    def __init__(self, recognizer, cam_index, servo_pin, ir_1_pin, ir_2_pin, server_root, tk_label=None):
+    def __init__(self, recognizer, cam_index, servo_pin, ir_1_pin, ir_2_pin, server_root, tk_label=None, tk_info=None):
         self.recognizer = recognizer
         self.camera = cv2.VideoCapture(cam_index)
         self.server_root = server_root
@@ -50,6 +50,7 @@ class Box:
         # self.students = test_students
 
         self.tk_label = tk_label
+        self.tk_info = tk_info
 
     def set_up_pins(self, servo_pin, ir_1_pin, ir_2_pin):
         self.servo_pin = servo_pin
@@ -80,7 +81,6 @@ class Box:
     
     def process_passed_book(self): 
         _, image = self.camera.read()
-        self.show_frame(image)
         id = self.recognizer.predict(image)
         print("Predicted:", id)
 
@@ -89,8 +89,10 @@ class Box:
         except:
             return
 
+        found = False
         for student in self.students:
             if id == student["id"] and id not in self.submitted:
+                found = True
                 print("****** SERVO OPENING")
                 setServoAngle(self.servo_pin, ANGLE_OPEN)
 
@@ -112,6 +114,7 @@ class Box:
                         if student["id"] == id:
                             self.listener(''.join(student["name"]))
 
+        self.show(image, id, found)
         # return r.text
     
     def service(self):
@@ -132,7 +135,7 @@ class Box:
     def set_listener(self, listener):
         self.listener = listener
 
-    def show_frame(self, frame):
+    def show(self, frame, id, found=True):
         self.index += 1
         if self.tk_label is not None:
             cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
@@ -141,3 +144,7 @@ class Box:
             imgtk = ImageTk.PhotoImage(image=img)
             self.tk_label.imgtk = imgtk
             self.tk_label.configure(image=imgtk)
+            if found:
+                self.tk_info.configure(text=str(id))
+            else:
+                self.tk_info.configure(text= f"未找到名字: {id}")
